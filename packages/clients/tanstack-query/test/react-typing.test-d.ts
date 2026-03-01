@@ -40,6 +40,16 @@ describe('React client typing test', () => {
         // @ts-expect-error
         check(client.user.useInfiniteFindMany().data?.pages[0]?.[0]?.$optimistic);
 
+        // TPageParam inference: pageParams should be typed as { cursor: string }[], not unknown[]
+        const infiniteResult = client.user.useInfiniteFindMany(
+            {},
+            {
+                getNextPageParam: (_lastPage, _allPages, lastPageParam: { cursor: string }) =>
+                    lastPageParam,
+            },
+        );
+        check(infiniteResult.data?.pageParams[0]?.cursor);
+
         check(client.user.useSuspenseFindMany().data[0]?.email);
         check(client.user.useSuspenseInfiniteFindMany().data.pages[0]?.[0]?.email);
         check(client.user.useCount().data?.toFixed(2));

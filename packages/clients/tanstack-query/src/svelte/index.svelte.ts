@@ -118,8 +118,8 @@ export type ModelQueryOptions<T> = Omit<CreateQueryOptions<T, DefaultError>, 'qu
 
 export type ModelQueryResult<T> = CreateQueryResult<WithOptimistic<T>, DefaultError> & { queryKey: QueryKey };
 
-export type ModelInfiniteQueryOptions<T> = Omit<
-    CreateInfiniteQueryOptions<T, DefaultError, InfiniteData<T>>,
+export type ModelInfiniteQueryOptions<T, TPageParam = unknown> = Omit<
+    CreateInfiniteQueryOptions<T, DefaultError, InfiniteData<T, TPageParam>, QueryKey, TPageParam>,
     'queryKey' | 'initialPageParam'
 > &
     QueryContext;
@@ -225,10 +225,10 @@ export type ModelQueryHooks<
             options?: Accessor<ModelQueryOptions<SimplifiedPlainResult<Schema, Model, T, Options>[]>>,
         ): ModelQueryResult<SimplifiedPlainResult<Schema, Model, T, Options>[]>;
 
-        useInfiniteFindMany<T extends FindManyArgs<Schema, Model, Options>>(
+        useInfiniteFindMany<T extends FindManyArgs<Schema, Model, Options>, TPageParam = unknown>(
             args?: Accessor<SelectSubset<T, FindManyArgs<Schema, Model, Options>>>,
-            options?: Accessor<ModelInfiniteQueryOptions<SimplifiedPlainResult<Schema, Model, T, Options>[]>>,
-        ): ModelInfiniteQueryResult<InfiniteData<SimplifiedPlainResult<Schema, Model, T, Options>[]>>;
+            options?: Accessor<ModelInfiniteQueryOptions<SimplifiedPlainResult<Schema, Model, T, Options>[], TPageParam>>,
+        ): ModelInfiniteQueryResult<InfiniteData<SimplifiedPlainResult<Schema, Model, T, Options>[], TPageParam>>;
 
         useCreate<T extends CreateArgs<Schema, Model, Options>>(
             options?: Accessor<ModelMutationOptions<SimplifiedPlainResult<Schema, Model, T, Options>, T>>,
@@ -458,14 +458,14 @@ export function useInternalQuery<TQueryFnData, TData>(
     return createQueryResult(query, queryKey);
 }
 
-export function useInternalInfiniteQuery<TQueryFnData, TData>(
+export function useInternalInfiniteQuery<TQueryFnData, TData, TPageParam = unknown>(
     _schema: SchemaDef,
     model: string,
     operation: string,
     args: Accessor<unknown>,
     options?: Accessor<
         Omit<
-            CreateInfiniteQueryOptions<TQueryFnData, DefaultError, InfiniteData<TData>>,
+            CreateInfiniteQueryOptions<TQueryFnData, DefaultError, InfiniteData<TData, TPageParam>, QueryKey, TPageParam>,
             'queryKey' | 'initialPageParam'
         > &
             QueryContext
@@ -476,18 +476,21 @@ export function useInternalInfiniteQuery<TQueryFnData, TData>(
     const queryKey = $derived(getQueryKey(model, operation, args(), { infinite: true, optimisticUpdate: false }));
 
     const finalOptions = () => {
-        const queryFn: QueryFunction<TQueryFnData, QueryKey, unknown> = ({ pageParam, signal }) =>
+        const queryFn: QueryFunction<TQueryFnData, QueryKey, TPageParam> = ({ pageParam, signal }) =>
             fetcher<TQueryFnData>(makeUrl(endpoint, model, operation, pageParam ?? args()), { signal }, fetch);
         const optionsValue = options?.() ?? { getNextPageParam: () => undefined };
         return {
             queryKey,
             queryFn,
-            initialPageParam: args(),
+            initialPageParam: args() as TPageParam,
             ...optionsValue,
         };
     };
 
-    const query = createInfiniteQuery<TQueryFnData, DefaultError, InfiniteData<TData>>(finalOptions);
+    // Cast is needed because TypeScript cannot reconcile the `TPageParam` generic
+    // in `finalOptions` with `createInfiniteQuery`'s own internal `TPageParam` inference.
+    // At runtime these types are equivalent since `finalOptions` is built from typed options.
+    const query = createInfiniteQuery<TQueryFnData, DefaultError, InfiniteData<TData, TPageParam>, QueryKey, TPageParam>(finalOptions as unknown as Accessor<CreateInfiniteQueryOptions<TQueryFnData, DefaultError, InfiniteData<TData, TPageParam>, QueryKey, TPageParam>>);
     // svelte-ignore state_referenced_locally
     return createQueryResult(query, queryKey);
 }
