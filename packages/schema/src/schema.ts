@@ -35,6 +35,7 @@ export type ModelDef = {
     isDelegate?: boolean;
     subModels?: readonly string[];
     isView?: boolean;
+    discriminatorValue?: string;
 };
 
 export type AttributeApplication = {

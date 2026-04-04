@@ -451,6 +451,26 @@ export class TsSchemaGenerator {
                 : []),
 
             ...(dm.isView ? [ts.factory.createPropertyAssignment('isView', ts.factory.createTrue())] : []),
+
+            // discriminatorValue: generate when @@delegate has a value arg specifying the discriminator value
+            ...(() => {
+                const delegateAttr = getAttribute(dm, '@@delegate');
+                if (delegateAttr && delegateAttr.args.length >= 2) {
+                    const valueArg = delegateAttr.args.find((arg) => arg.$resolvedParam?.name === 'value');
+                    if (valueArg) {
+                        const discriminatorValue = this.extractDiscriminatorValueString(valueArg.value);
+                        if (discriminatorValue !== undefined) {
+                            return [
+                                ts.factory.createPropertyAssignment(
+                                    'discriminatorValue',
+                                    ts.factory.createStringLiteral(discriminatorValue),
+                                ),
+                            ];
+                        }
+                    }
+                }
+                return [];
+            })(),
         ];
 
         const computedFields = dm.fields.filter((f) => hasAttribute(f, '@computed'));
@@ -742,6 +762,18 @@ export class TsSchemaGenerator {
                 isDataFieldReference(arg.value) &&
                 arg.value.target.ref === field,
         );
+    }
+
+    private extractDiscriminatorValueString(expr: Expression): string | undefined {
+        if (isLiteralExpr(expr)) {
+            const value = (expr as { value: string | number | boolean }).value;
+            if (typeof value === 'string') {
+                return value;
+            }
+        } else if (isReferenceExpr(expr) && isEnumField(expr.target.ref)) {
+            return expr.target.ref.name;
+        }
+        return undefined;
     }
 
     private getDataSourceProvider(model: Model) {

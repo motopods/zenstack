@@ -164,4 +164,99 @@ describe('Delegate Tests', () => {
         `,
         );
     });
+
+    it('supports enum discriminator value via string literal', async () => {
+        await loadSchema(`
+        datasource db {
+            provider = 'sqlite'
+            url      = 'file:./dev.db'
+        }
+
+        enum ContentType {
+            Image
+            Video
+        }
+
+        model Content {
+            id   Int         @id @default(autoincrement())
+            type ContentType
+            @@delegate(type)
+        }
+
+        model ImageContent extends Content {
+            url String
+            @@delegate(type, "Image")
+        }
+
+        model VideoContent extends Content {
+            src String
+            @@delegate(type, "Video")
+        }
+        `);
+    });
+
+    it('supports enum discriminator value via enum field reference', async () => {
+        await loadSchema(`
+        datasource db {
+            provider = 'sqlite'
+            url      = 'file:./dev.db'
+        }
+
+        enum ContentType {
+            Image
+            Video
+        }
+
+        model Content {
+            id   Int         @id @default(autoincrement())
+            type ContentType
+            @@delegate(type)
+        }
+
+        model ImageContent extends Content {
+            url String
+            @@delegate(type, Image)
+        }
+
+        model VideoContent extends Content {
+            src String
+            @@delegate(type, Video)
+        }
+        `);
+    });
+
+    it('@@delegate with discriminator value does not make child model a delegate', async () => {
+        const model = await loadSchema(`
+        datasource db {
+            provider = 'sqlite'
+            url      = 'file:./dev.db'
+        }
+
+        enum ContentType {
+            Image
+            Video
+        }
+
+        model Content {
+            id   Int         @id @default(autoincrement())
+            type ContentType
+            @@delegate(type)
+        }
+
+        model ImageContent extends Content {
+            url String
+            @@delegate(type, "Image")
+        }
+        `);
+
+        const content = model.declarations.find((d) => d.name === 'Content') as DataModel;
+        const image = model.declarations.find((d) => d.name === 'ImageContent') as DataModel;
+
+        // Content should be a delegate
+        expect(content.attributes.some((a) => a.decl.$refText === '@@delegate')).toBe(true);
+        // ImageContent should NOT be treated as a delegate (has value arg)
+        expect(image.attributes.some((a) => a.decl.$refText === '@@delegate')).toBe(true);
+        // But ImageContent has baseModel pointing to Content
+        expect(image.baseModel?.ref).toBe(content);
+    });
 });
