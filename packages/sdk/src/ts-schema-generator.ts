@@ -25,6 +25,7 @@ import {
     isNullExpr,
     isProcedure,
     isReferenceExpr,
+    isStringLiteral,
     isThisExpr,
     isTypeDef,
     isUnaryExpr,
@@ -765,11 +766,8 @@ export class TsSchemaGenerator {
     }
 
     private extractDiscriminatorValueString(expr: Expression): string | undefined {
-        if (isLiteralExpr(expr)) {
-            const value = (expr as { value: string | number | boolean }).value;
-            if (typeof value === 'string') {
-                return value;
-            }
+        if (isStringLiteral(expr)) {
+            return expr.value;
         } else if (isReferenceExpr(expr) && isEnumField(expr.target.ref)) {
             return expr.target.ref.name;
         }

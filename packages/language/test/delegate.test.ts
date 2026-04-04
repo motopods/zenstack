@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DataModel } from '../src/ast';
+import { isDelegateModel } from '../src/utils';
 import { loadSchema, loadSchemaWithError } from './utils';
 
 describe('Delegate Tests', () => {
@@ -252,10 +253,10 @@ describe('Delegate Tests', () => {
         const content = model.declarations.find((d) => d.name === 'Content') as DataModel;
         const image = model.declarations.find((d) => d.name === 'ImageContent') as DataModel;
 
-        // Content should be a delegate
-        expect(content.attributes.some((a) => a.decl.$refText === '@@delegate')).toBe(true);
-        // ImageContent should NOT be treated as a delegate (has value arg)
-        expect(image.attributes.some((a) => a.decl.$refText === '@@delegate')).toBe(true);
+        // Content should be a delegate (@@delegate with only discriminator arg)
+        expect(isDelegateModel(content)).toBe(true);
+        // ImageContent should NOT be treated as a delegate (@@delegate has a value arg)
+        expect(isDelegateModel(image)).toBe(false);
         // But ImageContent has baseModel pointing to Content
         expect(image.baseModel?.ref).toBe(content);
     });
