@@ -325,12 +325,20 @@ export abstract class BaseCrudDialect<Schema extends SchemaDef> {
         const conditions: Expression<SqlBool>[] = [];
 
         for (const [subModelKey, subWhere] of Object.entries(payload)) {
-            // map camelCase key back to PascalCase model name for schema/table lookups and discriminator checks
+            // Map camelCase user-facing key back to PascalCase model name. ZenStack model names are
+            // always PascalCase (e.g. RatedVideo), so the camelCase key is simply the first character
+            // lowercased (e.g. ratedVideo). Uppercasing the first character recovers the original name.
             const subModelName = subModelKey.charAt(0).toUpperCase() + subModelKey.slice(1);
             // discriminator must equal the sub-model name
             const discriminatorCheck = this.eb(discriminatorRef, '=', subModelName);
 
-            if (subWhere === true || subWhere == null || (typeof subWhere === 'object' && Object.keys(subWhere).length === 0)) {
+            // `true`, null, or an empty object all mean "match any instance of this sub-model type"
+            const isMatchAny =
+                subWhere === true ||
+                subWhere == null ||
+                (typeof subWhere === 'object' && Object.keys(subWhere).length === 0);
+
+            if (isMatchAny) {
                 // no sub-model field filter — just check the discriminator
                 conditions.push(discriminatorCheck);
             } else {
