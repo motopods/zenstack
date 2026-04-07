@@ -612,6 +612,37 @@ describe('Delegate model tests ', () => {
                     where: { $is: { video: { $is: { ratedVideo: { rating: 5 } } } } },
                 }),
             ).toResolveWithLength(1);
+
+            // $is filtering on inherited (base-model) fields — viewCount lives on Asset,
+            // not on Video directly; this exercises the correlated-subquery path for
+            // fields where fieldDef.originModel !== subModelName.
+            await expect(
+                client.asset.findMany({
+                    where: { $is: { video: { viewCount: { gt: 0 } } } },
+                }),
+            ).toResolveWithLength(1); // only v2 has viewCount=1, v1 has viewCount=0
+
+            // combine inherited-field filter with sub-model-own-field filter
+            await expect(
+                client.asset.findMany({
+                    where: { $is: { video: { viewCount: { gte: 0 }, duration: { gte: 100 } } } },
+                }),
+            ).toResolveWithLength(2); // both videos match
+
+            // inherited-field filter that matches nothing
+            await expect(
+                client.asset.findMany({
+                    where: { $is: { video: { viewCount: { gt: 10 } } } },
+                }),
+            ).toResolveWithLength(0);
+
+            // $is on nested delegate (Video → RatedVideo) filtering on Video's own
+            // inherited base field (viewCount from Asset)
+            await expect(
+                client.video.findMany({
+                    where: { $is: { ratedVideo: { viewCount: { gt: 0 } } } },
+                }),
+            ).toResolveWithLength(1); // only v2 (viewCount=1, rating=4)
         });
     });
 
