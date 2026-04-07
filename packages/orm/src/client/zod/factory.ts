@@ -487,7 +487,7 @@ export class ZodSchemaFactory<
         // $is sub-model filter for delegate (polymorphic) base models
         const modelDef = requireModel(this.schema, model);
         if (modelDef.isDelegate && modelDef.subModels && modelDef.subModels.length > 0) {
-            const subModelSchema = z.object(
+            const subModelSchema = z.strictObject(
                 Object.fromEntries(
                     modelDef.subModels.map((subModel) => [
                         subModel.charAt(0).toLowerCase() + subModel.slice(1),
