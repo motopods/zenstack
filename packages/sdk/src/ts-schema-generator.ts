@@ -456,19 +456,15 @@ export class TsSchemaGenerator {
             // discriminatorValue: generate when @@delegateMap specifies the discriminator value
             ...(() => {
                 const delegateMapAttr = getAttribute(dm, '@@delegateMap');
-                if (delegateMapAttr && delegateMapAttr.args.length >= 1) {
-                    const valueArg = delegateMapAttr.args[0];
-                    if (valueArg) {
-                        const discriminatorValue = this.extractDiscriminatorValueString(valueArg.value);
-                        if (discriminatorValue !== undefined) {
-                            return [
-                                ts.factory.createPropertyAssignment(
-                                    'discriminatorValue',
-                                    ts.factory.createStringLiteral(discriminatorValue),
-                                ),
-                            ];
-                        }
-                    }
+                const valueArg = delegateMapAttr?.args[0];
+                const discriminatorValue = valueArg ? this.extractDiscriminatorValueString(valueArg.value) : undefined;
+                if (discriminatorValue !== undefined) {
+                    return [
+                        ts.factory.createPropertyAssignment(
+                            'discriminatorValue',
+                            ts.factory.createStringLiteral(discriminatorValue),
+                        ),
+                    ];
                 }
                 return [];
             })(),
