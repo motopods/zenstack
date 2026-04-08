@@ -1,10 +1,10 @@
 import { createTestClient } from '@zenstackhq/testtools';
 import { describe, expect, it } from 'vitest';
 
-// Feature: @@delegate discriminator value support for enum types
+// Feature: @@delegateMap attribute support for enum types
 // When the discriminator field is an enum type, the model name may not match the enum value.
-// @@delegate(field, enumValue) allows specifying the exact discriminator value to use.
-describe('@@delegate with enum discriminator value', () => {
+// @@delegateMap(enumValue) on a child model specifies the exact discriminator value to use.
+describe('@@delegateMap with enum discriminator value', () => {
     it('writes the specified enum value as discriminator on create', async () => {
         const db = await createTestClient(
             `
@@ -21,12 +21,12 @@ model Content {
 
 model ImagePost extends Content {
     url String
-    @@delegate(type, Image)
+    @@delegateMap(Image)
 }
 
 model VideoPost extends Content {
     src String
-    @@delegate(type, Video)
+    @@delegateMap(Video)
 }
         `,
             { usePrismaPush: true },
@@ -55,12 +55,12 @@ model Content {
 
 model ImagePost extends Content {
     url String
-    @@delegate(type, "Image")
+    @@delegateMap("Image")
 }
 
 model VideoPost extends Content {
     src String
-    @@delegate(type, "Video")
+    @@delegateMap("Video")
 }
         `,
             { usePrismaPush: true },
@@ -73,7 +73,7 @@ model VideoPost extends Content {
         expect(video.type).toBe('Video');
     });
 
-    it('uses model name as discriminator when no value is specified (backward compatibility)', async () => {
+    it('uses model name as discriminator when @@delegateMap is not specified (backward compatibility)', async () => {
         const db = await createTestClient(
             `
 model Content {
@@ -115,7 +115,7 @@ model Content {
 
 model ImagePost extends Content {
     url String
-    @@delegate(type, Image)
+    @@delegateMap(Image)
 }
         `,
             { usePrismaPush: true },

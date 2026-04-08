@@ -624,11 +624,25 @@ attribute @@prisma.passthrough(_ text: String)
 
 /**
  * Marks a model to be a delegate. Used for implementing polymorphism.
- * When used on a child model with a second argument, specifies the discriminator value
- * to use for this model instead of the model name. This is useful when the discriminator
- * field is an enum type whose values don't match the model names.
  */
-attribute @@delegate(_ discriminator: FieldReference, _ value: Any?)
+attribute @@delegate(_ discriminator: FieldReference)
+
+/**
+ * Specifies the discriminator value for a child model in a delegate hierarchy.
+ * Use this when the discriminator field is an enum type or when you want a custom
+ * value that differs from the model name.
+ *
+ * Example with enum:
+ * ```
+ * @@delegateMap(ContentType.Image)
+ * ```
+ *
+ * Example with string:
+ * ```
+ * @@delegateMap("image")
+ * ```
+ */
+attribute @@delegateMap(_ value: Any)
 
 /**
  * Used for specifying operator classes for GIN index.

@@ -453,11 +453,11 @@ export class TsSchemaGenerator {
 
             ...(dm.isView ? [ts.factory.createPropertyAssignment('isView', ts.factory.createTrue())] : []),
 
-            // discriminatorValue: generate when @@delegate has a value arg specifying the discriminator value
+            // discriminatorValue: generate when @@delegateMap specifies the discriminator value
             ...(() => {
-                const delegateAttr = getAttribute(dm, '@@delegate');
-                if (delegateAttr && delegateAttr.args.length >= 2) {
-                    const valueArg = delegateAttr.args.find((arg) => arg.$resolvedParam?.name === 'value');
+                const delegateMapAttr = getAttribute(dm, '@@delegateMap');
+                if (delegateMapAttr && delegateMapAttr.args.length >= 1) {
+                    const valueArg = delegateMapAttr.args[0];
                     if (valueArg) {
                         const discriminatorValue = this.extractDiscriminatorValueString(valueArg.value);
                         if (discriminatorValue !== undefined) {

@@ -36,6 +36,7 @@ export default class DataModelValidator implements AstValidator<DataModel> {
             this.validateMixins(dm, accept);
         }
         this.validateInherits(dm, accept);
+        this.validateDelegateMap(dm, accept);
     }
 
     private validateFields(dm: DataModel, accept: ValidationAcceptor) {
@@ -467,6 +468,29 @@ export default class DataModelValidator implements AstValidator<DataModel> {
             }
             seen.push(current);
             todo.push(...current.mixins.map((mixin) => mixin.ref!));
+        }
+    }
+
+    private validateDelegateMap(dm: DataModel, accept: ValidationAcceptor) {
+        const delegateMapAttr = dm.attributes.find((attr) => attr.decl.$refText === '@@delegateMap');
+        if (!delegateMapAttr) {
+            return;
+        }
+
+        // @@delegateMap can only be used on a child model that extends a delegate
+        if (!dm.baseModel) {
+            accept('error', '@@delegateMap can only be used on a model that extends a delegate model', {
+                node: delegateMapAttr,
+            });
+            return;
+        }
+
+        invariant(dm.baseModel.ref, 'baseModel must be resolved');
+
+        if (!isDelegateModel(dm.baseModel.ref)) {
+            accept('error', '@@delegateMap can only be used on a model that extends a delegate model', {
+                node: delegateMapAttr,
+            });
         }
     }
 }

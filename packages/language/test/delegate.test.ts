@@ -186,12 +186,12 @@ describe('Delegate Tests', () => {
 
         model ImageContent extends Content {
             url String
-            @@delegate(type, "Image")
+            @@delegateMap("Image")
         }
 
         model VideoContent extends Content {
             src String
-            @@delegate(type, "Video")
+            @@delegateMap("Video")
         }
         `);
     });
@@ -216,17 +216,17 @@ describe('Delegate Tests', () => {
 
         model ImageContent extends Content {
             url String
-            @@delegate(type, Image)
+            @@delegateMap(Image)
         }
 
         model VideoContent extends Content {
             src String
-            @@delegate(type, Video)
+            @@delegateMap(Video)
         }
         `);
     });
 
-    it('@@delegate with discriminator value does not make child model a delegate', async () => {
+    it('@@delegateMap child model is not a delegate model', async () => {
         const model = await loadSchema(`
         datasource db {
             provider = 'sqlite'
@@ -246,18 +246,35 @@ describe('Delegate Tests', () => {
 
         model ImageContent extends Content {
             url String
-            @@delegate(type, "Image")
+            @@delegateMap("Image")
         }
         `);
 
         const content = model.declarations.find((d) => d.name === 'Content') as DataModel;
         const image = model.declarations.find((d) => d.name === 'ImageContent') as DataModel;
 
-        // Content should be a delegate (@@delegate with only discriminator arg)
+        // Content should be a delegate (has @@delegate)
         expect(isDelegateModel(content)).toBe(true);
-        // ImageContent should NOT be treated as a delegate (@@delegate has a value arg)
+        // ImageContent should NOT be treated as a delegate (only has @@delegateMap, no @@delegate)
         expect(isDelegateModel(image)).toBe(false);
         // But ImageContent has baseModel pointing to Content
         expect(image.baseModel?.ref).toBe(content);
+    });
+
+    it('rejects @@delegateMap on a non-child model', async () => {
+        await loadSchemaWithError(
+            `
+        datasource db {
+            provider = 'sqlite'
+            url      = 'file:./dev.db'
+        }
+
+        model Standalone {
+            id Int @id @default(autoincrement())
+            @@delegateMap("foo")
+        }
+        `,
+            'can only be used on a model that extends a delegate model',
+        );
     });
 });

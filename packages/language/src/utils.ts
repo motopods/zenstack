@@ -155,12 +155,7 @@ export function isComputedField(field: DataField) {
 }
 
 export function isDelegateModel(node: AstNode) {
-    if (!isDataModel(node)) return false;
-    const delegateAttr = getAttribute(node, '@@delegate');
-    if (!delegateAttr) return false;
-    // @@delegate with 2+ args means it's specifying the discriminator value for this child model,
-    // not making this model a delegate (which requires submodels and only a discriminator field arg)
-    return delegateAttr.args.length < 2;
+    return isDataModel(node) && hasAttribute(node, '@@delegate');
 }
 
 export function resolved<T extends AstNode>(ref: Reference<T>): T {
