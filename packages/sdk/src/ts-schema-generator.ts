@@ -25,6 +25,7 @@ import {
     isNullExpr,
     isProcedure,
     isReferenceExpr,
+    isStringLiteral,
     isThisExpr,
     isTypeDef,
     isUnaryExpr,
@@ -451,6 +452,22 @@ export class TsSchemaGenerator {
                 : []),
 
             ...(dm.isView ? [ts.factory.createPropertyAssignment('isView', ts.factory.createTrue())] : []),
+
+            // discriminatorValue: generate when @@delegateMap specifies the discriminator value
+            ...(() => {
+                const delegateMapAttr = getAttribute(dm, '@@delegateMap');
+                const valueArg = delegateMapAttr?.args[0];
+                const discriminatorValue = valueArg ? this.extractDiscriminatorValueString(valueArg.value) : undefined;
+                if (discriminatorValue !== undefined) {
+                    return [
+                        ts.factory.createPropertyAssignment(
+                            'discriminatorValue',
+                            ts.factory.createStringLiteral(discriminatorValue),
+                        ),
+                    ];
+                }
+                return [];
+            })(),
         ];
 
         const computedFields = dm.fields.filter((f) => hasAttribute(f, '@computed'));
@@ -742,6 +759,15 @@ export class TsSchemaGenerator {
                 isDataFieldReference(arg.value) &&
                 arg.value.target.ref === field,
         );
+    }
+
+    private extractDiscriminatorValueString(expr: Expression): string | undefined {
+        if (isStringLiteral(expr)) {
+            return expr.value;
+        } else if (isReferenceExpr(expr) && isEnumField(expr.target.ref)) {
+            return expr.target.ref.name;
+        }
+        return undefined;
     }
 
     private getDataSourceProvider(model: Model) {

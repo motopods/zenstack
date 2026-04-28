@@ -628,6 +628,23 @@ attribute @@prisma.passthrough(_ text: String)
 attribute @@delegate(_ discriminator: FieldReference)
 
 /**
+ * Specifies the discriminator value for a child model in a delegate hierarchy.
+ * Use this when the discriminator field is an enum type or when you want a custom
+ * value that differs from the model name.
+ *
+ * Example with enum:
+ * ```
+ * @@delegateMap(ContentType.Image)
+ * ```
+ *
+ * Example with string:
+ * ```
+ * @@delegateMap("image")
+ * ```
+ */
+attribute @@delegateMap(_ value: Any)
+
+/**
  * Used for specifying operator classes for GIN index.
  */
 function raw(value: String): Any {

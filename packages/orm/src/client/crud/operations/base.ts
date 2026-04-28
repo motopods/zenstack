@@ -599,7 +599,8 @@ export abstract class BaseOperationHandler<Schema extends SchemaDef> {
 
         const discriminatorField = getDiscriminatorField(this.schema, model);
         invariant(discriminatorField, `Base model "${model}" must have a discriminator field`);
-        thisCreateFields[discriminatorField] = forModel;
+        const forModelDef = requireModel(this.schema, forModel);
+        thisCreateFields[discriminatorField] = forModelDef.discriminatorValue ?? forModel;
 
         // create base model entity
         const baseEntity: any = await this.create(
@@ -999,6 +1000,8 @@ export abstract class BaseOperationHandler<Schema extends SchemaDef> {
         const remainingFieldRows: any[] = [];
         const discriminatorField = getDiscriminatorField(this.schema, model);
         invariant(discriminatorField, `Base model "${model}" must have a discriminator field`);
+        const forModelDef = requireModel(this.schema, forModel);
+        const discriminatorValue = forModelDef.discriminatorValue ?? forModel;
 
         for (const createFields of createRows) {
             const thisCreateFields: any = {};
@@ -1011,7 +1014,7 @@ export abstract class BaseOperationHandler<Schema extends SchemaDef> {
                     remainingFields[field] = value;
                 }
             });
-            thisCreateFields[discriminatorField] = forModel;
+            thisCreateFields[discriminatorField] = discriminatorValue;
             thisCreateRows.push(thisCreateFields);
             remainingFieldRows.push(remainingFields);
         }
